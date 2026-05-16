@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pakistan Land Area Calculator — Advanced</title>
+<style>
+  :root{--bg:#f4f7fb;--card:#ffffff;--accent:#0066cc;--muted:#6b7280}
+  body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:#0b1220}
+  .wrap{max-width:1100px;margin:28px auto;padding:18px}
+  header{display:flex;align-items:center;gap:14px}
+  .logo{width:68px;height:68px;border-radius:10px;background:linear-gradient(135deg,#0066cc,#48a9ff);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:20px}
+  h1{margin:0;font-size:20px}
+  .meta{color:var(--muted);font-size:13px}
+  .grid{display:grid;grid-template-columns:1fr 420px;gap:18px;margin-top:18px}
+  .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(13,38,63,0.08)}
+  label{display:block;font-size:13px;color:#24303a;margin-top:8px}
+  input,select,button{width:100%;padding:10px;border-radius:8px;border:1px solid #d1d5db;font-size:15px}
+  .row{display:flex;gap:10px}
+  .row .col{flex:1}
+  .small{font-size:13px;padding:8px}
+  button.primary{background:var(--accent);color:white;border:none}
+  .results{background:#f8fbff;padding:12px;border-radius:8px;margin-top:12px;font-size:15px}
+  .muted{color:var(--muted);font-size:13px}
+  .controls{display:flex;gap:8px;margin-top:10px}
+  canvas{width:100%;border-radius:8px;border:1px solid #e6eef6;background:white}
+  .footer{margin-top:10px;color:var(--muted);font-size:13px}
+  @media(max-width:980px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">PK</div>
+    <div>
+      <h1>Pakistan Land Area Calculator — Advanced</h1>
+      <div class="meta">Marla standard = <strong id="marlaConstText">272.25 sq ft</strong> (editable)</div>
+    </div>
+    <div style="margin-left:auto">
+      <button onclick="printResults()" class="small">Export / Print</button>
+      <button onclick="saveSettings()" class="small">Save Settings</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: Calculators -->
+    <div>
+      <div class="card">
+        <h3>1 — Area by Dimensions (ft)</h3>
+        <div class="row">
+          <div class="col"><label>Length (ft)</label><input id="len" type="number" placeholder="e.g. 100"/></div>
+          <div class="col"><label>Width (ft)</label><input id="wid" type="number" placeholder="e.g. 50"/></div>
+        </div>
+        <div class="controls">
+          <button class="primary" onclick="calcByDimensions()">Calculate</button>
+          <button onclick="clearDims()">Clear</button>
+        </div>
+        <div id="dimResult" class="results" style="display:none"></div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <h3>2 — Convert from Square Feet</h3>
+        <label>Area (sq ft)</label>
+        <input id="sqft" type="number" placeholder="Enter square feet"/>
+        <div class="controls">
+          <button class="primary" onclick="convertFromSqFt()">Convert</button>
+          <button onclick="clearSqft()">Clear</button>
+        </div>
+        <div id="ftResult" class="results" style="display:none"></div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <h3>3 — Reverse Conversion (Pakistan Units)</h3>
+        <label>Unit</label>
+        <select id="unitType">
+          <option value="marla">Marla (Pakistan)</option>
+          <option value="sarsai">Sarsai</option>
+          <option value="kanal">Kanal</option>
+          <option value="acre">Acre</option>
+          <option value="hectare">Hectare</option>
+          <option value="donum">Donum</option>
+          <option value="gunta">Gunta</option>
+          <option value="biswas">Biswa</option>
+        </select>
+        <label>Value</label>
+        <input id="unitValue" type="number" placeholder="Enter value"/>
+        <div class="controls">
+          <button class="primary" onclick="reverseConvert()">To sq ft</button>
+          <button onclick="clearReverse()">Clear</button>
+        </div>
+        <div id="revResult" class="results" style="display:none"></div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <h3>4 — Interactive Plot / Draw Area</h3>
+        <div class="muted">Click+drag on the canvas to draw a rectangle; set scale (ft per pixel) below.</div>
+        <canvas id="plotCanvas" width="800" height="400"></canvas>
+        <div class="row" style="margin-top:8px">
+          <div class="col"><label>Scale (ft per pixel)</label><input id="scale" type="number" value="1"/></div>
+          <div class="col"><label>Snap to grid (px)</label><input id="snap" type="number" value="1"/></div>
+        </div>
+        <div class="controls">
+          <button class="primary" onclick="exportPlotArea()">Calculate from Selection</button>
+          <button onclick="clearPlot()">Clear</button>
+        </div>
+        <div id="plotResult" class="results" style="display:none"></div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: Settings & Info -->
+    <aside>
+      <div class="card">
+        <h3>Settings (Editable constants)</h3>
+        <div class="muted">Change unit conversions if your local standard differs. Save settings to store locally.</div>
+        <label>1 Marla (sq ft)</label>
+        <input id="marla" type="number" value="272.25"/>
+        <label>1 Sarsai (sq ft)</label>
+        <input id="sarsai" type="number" value="30.25"/>
+        <label>1 Donum (sq ft)</label>
+        <input id="donum" type="number" value="27225"/>
+        <label>1 Gunta (sq ft)</label>
+        <input id="gunta" type="number" value="121"/>
+        <label>1 Biswa (sq ft)</label>
+        <input id="biswa" type="number" value="60.25"/>
+        <label>1 Acre (sq ft)</label>
+        <input id="acre" type="number" value="43560"/>
+        <label>1 Hectare (sq ft)</label>
+        <input id="hectare" type="number" value="107639"/>
+        <div class="controls" style="margin-top:12px">
+          <button class="primary" onclick="applySettings()">Apply</button>
+          <button onclick="restoreDefaults()">Restore Defaults</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <h3>Saved Inputs</h3>
+        <div class="muted">Save and load recent calculations for convenience.</div>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button onclick="saveCurrent()">Save</button>
+          <button onclick="loadSaved()">Load</button>
+          <button onclick="clearSaved()">Clear</button>
+        </div>
+        <div id="savedList" style="margin-top:10px" class="muted">No saved items</div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <h3>About</h3>
+        <div class="muted">This tool uses Pakistan default units. All constants are editable. Use Print to export results to PDF via browser.</div>
+      </div>
+
+    </aside>
+  </div>
+
+  <div class="footer">Built for Pakistan standards • Editable & printable • Local storage enabled</div>
+</div>
+
+<script>
+// Load defaults or saved settings
+const defaults = {
+  marla:272.25, sarsai:30.25, donum:27225, gunta:121, biswa:60.25, acre:43560, hectare:107639
+};
+function loadSettings(){
+  const s = JSON.parse(localStorage.getItem('pk_land_settings')||'{}');
+  const m = Object.assign({}, defaults, s);
+  document.getElementById('marla').value = m.marla;
+  document.getElementById('sarsai').value = m.sarsai;
+  document.getElementById('donum').value = m.donum;
+  document.getElementById('gunta').value = m.gunta;
+  document.getElementById('biswa').value = m.biswa;
+  document.getElementById('acre').value = m.acre;
+  document.getElementById('hectare').value = m.hectare;
+  updateMarlaText();
+}
+function applySettings(){
+  const s = {
+    marla: parseFloat(document.getElementById('marla').value),
+    sarsai: parseFloat(document.getElementById('sarsai').value),
+    donum: parseFloat(document.getElementById('donum').value),
+    gunta: parseFloat(document.getElementById('gunta').value),
+    biswa: parseFloat(document.getElementById('biswa').value),
+    acre: parseFloat(document.getElementById('acre').value),
+    hectare: parseFloat(document.getElementById('hectare').value)
+  };
+  localStorage.setItem('pk_land_settings', JSON.stringify(s));
+  updateMarlaText();
+  alert('Settings saved locally');
+}
+function restoreDefaults(){
+  localStorage.removeItem('pk_land_settings'); loadSettings(); alert('Restored defaults');
+}
+function saveSettings(){ applySettings(); }
+function updateMarlaText(){ document.getElementById('marlaConstText').textContent = document.getElementById('marla').value + ' sq ft'; }
+
+loadSettings();
+
+// Helper: get current constants
+function constants(){
+  return {
+    marla: parseFloat(document.getElementById('marla').value),
+    sarsai: parseFloat(document.getElementById('sarsai').value),
+    donum: parseFloat(document.getElementById('donum').value),
+    gunta: parseFloat(document.getElementById('gunta').value),
+    biswa: parseFloat(document.getElementById('biswa').value),
+    acre: parseFloat(document.getElementById('acre').value),
+    hectare: parseFloat(document.getElementById('hectare').value)
+  };
+}
+
+// 1 — Dimensions
+function calcByDimensions(){
+  const L = parseFloat(document.getElementById('len').value);
+  const W = parseFloat(document.getElementById('wid').value);
+  if(!L || !W){ alert('Enter length and width (ft)'); return; }
+  const area = L * W;
+  showDimResult(area);
+}
+function showDimResult(area){
+  const c = constants();
+  const marla = area / c.marla; const kanal = marla / 20; const sarsai = area / c.sarsai;
+  const acre = area / c.acre; const hectare = area / c.hectare; const donum = area / c.donum;
+  const gunta = area / c.gunta; const biswa = area / c.biswa;
+  const el = document.getElementById('dimResult');
+  el.style.display='block';
+  el.innerHTML = `<b>${area.toFixed(2)}</b> sq ft<br>
+    <b>${marla.toFixed(4)}</b> Marla<br>
+    <b>${kanal.toFixed(4)}</b> Kanal<br>
+    <b>${sarsai.toFixed(4)}</b> Sarsai<br>
+    <b>${gunta.toFixed(4)}</b> Gunta<br>
+    <b>${biswa.toFixed(4)}</b> Biswa<br>
+    <b>${donum.toFixed(4)}</b> Donum<br>
+    <b>${acre.toFixed(6)}</b> Acre<br>
+    <b>${hectare.toFixed(6)}</b> Hectare`;
+  addSavedItem({type:'dim', area, ts:Date.now()});
+}
+function clearDims(){ document.getElementById('len').value=''; document.getElementById('wid').value=''; document.getElementById('dimResult').style.display='none'; }
+
+// 2 — From sqft
+function convertFromSqFt(){ const ft = parseFloat(document.getElementById('sqft').value); if(!ft){ alert('Enter square feet'); return; }
+  const c = constants();
+  const marla = ft / c.marla; const kanal = marla / 20; const sarsai = ft / c.sarsai;
+  const acre = ft / c.acre; const hectare = ft / c.hectare; const donum = ft / c.donum; const gunta = ft / c.gunta; const biswa = ft / c.biswa;
+  const el = document.getElementById('ftResult'); el.style.display='block'; el.innerHTML = `
+    <b>${ft.toFixed(2)}</b> sq ft<br>
+    <b>${marla.toFixed(4)}</b> Marla<br>
+    <b>${kanal.toFixed(4)}</b> Kanal<br>
+    <b>${sarsai.toFixed(4)}</b> Sarsai<br>
+    <b>${gunta.toFixed(4)}</b> Gunta<br>
+    <b>${biswa.toFixed(4)}</b> Biswa<br>
+    <b>${donum.toFixed(4)}</b> Donum<br>
+    <b>${acre.toFixed(6)}</b> Acre<br>
+    <b>${hectare.toFixed(6)}</b> Hectare`;
+  addSavedItem({type:'sqft', area:ft, ts:Date.now()}); }
+function clearSqft(){ document.getElementById('sqft').value=''; document.getElementById('ftResult').style.display='none'; }
+
+// 3 — Reverse
+function reverseConvert(){ const val = parseFloat(document.getElementById('unitValue').value); const type = document.getElementById('unitType').value; if(!val){ alert('Enter value'); return; }
+  const c = constants(); let sqft=0; switch(type){
+    case 'marla': sqft = val * c.marla; break; case 'sarsai': sqft = val * c.sarsai; break; case 'kanal': sqft = val * c.marla*20; break; case 'acre': sqft = val * c.acre; break; case 'hectare': sqft = val * c.hectare; break; case 'donum': sqft = val * c.donum; break; case 'gunta': sqft = val * c.gunta; break; case 'biswas': sqft = val * c.biswa; break; }
+  const el = document.getElementById('revResult'); el.style.display='block'; el.innerHTML = `<b>${val}</b> ${type} = <b>${sqft.toFixed(2)}</b> sq ft`;
+  addSavedItem({type:'reverse', area:sqft, ts:Date.now()}); }
+function clearReverse(){ document.getElementById('unitValue').value=''; document.getElementById('revResult').style.display='none'; }
+
+// Save / Load recent calculations
+function savedKey(){ return 'pk_land_saved_items'; }
+function addSavedItem(obj){ const arr = JSON.parse(localStorage.getItem(savedKey())||'[]'); arr.unshift(obj); localStorage.setItem(savedKey(), JSON.stringify(arr.slice(0,10))); renderSaved(); }
+function renderSaved(){ const arr = JSON.parse(localStorage.getItem(savedKey())||'[]'); const el = document.getElementById('savedList'); if(!arr.length) { el.textContent='No saved items'; return; } el.innerHTML = arr.map((s,i)=>{
+  const d = new Date(s.ts); return `<div style="padding:6px;border-bottom:1px solid #eee">${i+1}. <span class=\"muted\">${d.toLocaleString()}</span> — ${s.type} — ${s.area.toFixed(2)} sq ft</div>`}).join(''); }
+function saveCurrent(){ const L = parseFloat(document.getElementById('len').value)||0; const W = parseFloat(document.getElementById('wid').value)||0; const sqft = parseFloat(document.getElementById('sqft').value)||0; const unitVal = parseFloat(document.getElementById('unitValue').value)||0; const type = document.getElementById('unitType').value; const obj = {type:'manual', area: Math.max(L*W, sqft, unitVal,0), ts:Date.now()}; addSavedItem(obj); alert('Saved current calculation'); }
+function loadSaved(){ const arr = JSON.parse(localStorage.getItem(savedKey())||'[]'); if(!arr.length){ alert('No saved items'); return; } const top = arr[0]; // load into sqft for convenience
+  document.getElementById('sqft').value = top.area; convertFromSqFt(); }
+function clearSaved(){ localStorage.removeItem(savedKey()); renderSaved(); }
+renderSaved();
+
+// Plot / Draw area
+const canvas = document.getElementById('plotCanvas'); const ctx = canvas.getContext('2d'); let isDown=false, startX=0, startY=0, rects=[];
+canvas.addEventListener('mousedown', (e)=>{ const r=canvas.getBoundingClientRect(); isDown=true; startX = e.clientX - r.left; startY = e.clientY - r.top; });
+canvas.addEventListener('mousemove', (e)=>{ if(!isDown) return; const r=canvas.getBoundingClientRect(); const mx = e.clientX - r.left; const my = e.clientY - r.top; drawCanvas(startX,startY,mx,my); });
+canvas.addEventListener('mouseup', (e)=>{ if(!isDown) return; const r=canvas.getBoundingClientRect(); isDown=false; const mx = e.clientX - r.left; const my = e.clientY - r.top; rects = [{x:Math.min(startX,mx), y:Math.min(startY,my), w:Math.abs(mx-startX), h:Math.abs(my-startY)}]; drawCanvas(); });
+function drawCanvas(sx,sy,ex,ey){ ctx.clearRect(0,0,canvas.width,canvas.height); // grid
+  const snap = parseFloat(document.getElementById('snap').value)||1; for(let x=0;x<canvas.width;x+=10){ ctx.strokeStyle='#f1f5f9'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
+  if(sx!==undefined){ const x = Math.min(sx,ex), y=Math.min(sy,ey), w=Math.abs(ex-sx), h=Math.abs(ey-sy); ctx.fillStyle='rgba(72,138,255,0.12)'; ctx.fillRect(x,y,w,h); ctx.strokeStyle='#2b6cb0'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
+  rects.forEach(r=>{ ctx.fillStyle='rgba(72,138,255,0.12)'; ctx.fillRect(r.x,r.y,r.w,r.h); ctx.strokeStyle='#2b6cb0'; ctx.lineWidth=2; ctx.strokeRect(r.x,r.y,r.w,r.h); }); }
+function clearPlot(){ rects=[]; drawCanvas(); document.getElementById('plotResult').style.display='none'; }
+function exportPlotArea(){ if(!rects.length){ alert('Draw a rectangle on the canvas first'); return; } const r = rects[0]; const scale = parseFloat(document.getElementById('scale').value)||1; // ft per pixel
+  const sqft = (r.w * scale) * (r.h * scale); const c = constants(); const marla = sqft / c.marla; const kanal = marla/20; document.getElementById('plotResult').style.display='block'; document.getElementById('plotResult').innerHTML = `<b>${sqft.toFixed(2)}</b> sq ft<br><b>${marla.toFixed(4)}</b> Marla<br><b>${kanal.toFixed(4)}</b> Kanal`;
+  addSavedItem({type:'plot', area:sqft, ts:Date.now()}); }
+
+// Print / export
+function printResults(){ window.print(); }
+
+// Simple helpers
+function clearAll(){ clearDims(); clearSqft(); clearReverse(); clearPlot(); }
+
+function exportArea(){
+    let text = "Land Area Calculation Resultsnn";
+    let dim = document.getElementById('dimResult').innerText;
+    let ftc = document.getElementById('ftResult').innerText;
+    let rev = document.getElementById('revResult').innerText;
+    if(dim) text += "By Length × Width:n" + dim + "nn";
+    if(ftc) text += "From Sq Ft Conversion:n" + ftc + "nn";
+    if(rev) text += "Reverse Conversion:n" + rev + "nn";
+
+    let blob = new Blob([text], { type: 'text/plain' });
+    let link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'land_area_results.txt';
+    link.click();
+}
+function exportArea(){
+    let text = "Land Area Calculation Resultsnn";
+    text += document.body.innerText;
+    let blob = new Blob([text], { type: 'text/plain' });
+    let link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'land_area_results.txt';
+    link.click();
+}
+</script>
+</body>
+</html>
